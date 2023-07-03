@@ -35,28 +35,32 @@ const userModel = (sequelize, DataTypes) => {
         }
     });
 
-    model.beforeCreate(async (user) => {
-        let hashedPass = await bcrypt.hash(user.password, 10);
-        user.password = hashedPass;
-    });
-
     model.authenticateBasic = async function (username, password) {
-        const user = await this.findOne({ where: { username } });
-        const valid = await bcrypt.compare(password, user.password);
-        if (valid) { return user; }
-        throw new Error('Invalid User');
+        try {
+            const user = await this.findOne({ where: { username } });
+            const valid = await bcrypt.compare(password, user.password);
+            if (valid) {
+                return user;
+            }
+            throw new Error('Invalid User');
+        } catch (e) {
+            throw new Error(e.message);
+        }
     };
 
     model.authenticateToken = async function (token) {
         try {
             const parsedToken = jwt.verify(token, SECRET);
             const user = await this.findOne({ where: { username: parsedToken.username } });
-            if (user) { return user; }
+            if (user) {
+                return user;
+            }
             throw new Error("User Not Found");
         } catch (e) {
-            throw new Error(e.message)
+            throw new Error(e.message);
         }
     };
+
 
     return model;
 }
